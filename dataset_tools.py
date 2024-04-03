@@ -10,6 +10,8 @@ path = "dataset_mood_smartphone.csv"
 
 dataset_df = pd.read_csv(path, index_col=0)
 dataset_df["time"] = pd.to_datetime(dataset_df['time'])
+
+
 # dataset_df.info()
 # print(dataset_df.head())
 
@@ -77,32 +79,89 @@ def get_unique_variables(df):
     return df["variable"].unique()
 
 
-var_names = ['mood', 'circumplex.arousal', 'circumplex.valence', 'activity', 'screen',
-             'call', 'sms', 'appCat.builtin', 'appCat.communication',
-             'appCat.entertainment', 'appCat.finance', 'appCat.game', 'appCat.office',
-             'appCat.other', 'appCat.social', 'appCat.travel', 'appCat.unknown',
-             'appCat.utilities', 'appCat.weather']
-# var_names = get_unique_variables(dataset_df)
+def create_per_day_and_participant_dataset(save_path="per_day_participant_dataset.csv"):
+    # var_names = get_unique_variables(dataset_df) # don't use this, it's a numpy array
+    """
+    var_names = ['mood', 'circumplex.arousal', 'circumplex.valence', 'activity', 'screen',
+                 'call', 'sms', 'appCat.builtin', 'appCat.communication',
+                 'appCat.entertainment', 'appCat.finance', 'appCat.game', 'appCat.office',
+                 'appCat.other', 'appCat.social', 'appCat.travel', 'appCat.unknown',
+                 'appCat.utilities', 'appCat.weather']
+    """
 
-# datapoint for each day + individual combination (good?)
-unique_ids = get_unique_individual_ids(dataset_df)
-datapoints = {}
-for participant_id in tqdm(unique_ids, desc="participants"):
-    # dataframe containing only rows of participant with id "participant_id"
-    id_df = dataset_df[dataset_df["id"] == participant_id]
-    unique_dates = get_unique_dates(id_df)
-    for date in tqdm(unique_dates, desc="dates"):
-        # per date
-        time1 = datetime.combine(date, time(0, 0))
-        time2 = datetime.combine(date, time(23, 59))
-        relevant_rows = get_all_rows_between(participant_id, time1, time2, id_df)
-        datapoints.setdefault((participant_id, date), [(0, 0)] * len(var_names))
-        for index, row in relevant_rows.iterrows():
-            var_index = var_names.index(row["variable"])
-            # sum everything together
-            previous_count, previous_sum = datapoints[(participant_id, date)][var_index]
-            datapoints[(participant_id, date)][var_index] = (previous_count+1, previous_sum + row["value"])
+    var_names = ["mood", "mood_count", "circumplex.arousal", "circumplex.arousal_count", "circumplex.valence",
+                 "circumplex.valence_count", "activity", "activity_count", "screen", "screen_count", "call",
+                 "call_count",
+                 "sms", "sms_count", "appCat.builtin", "appCat.builtin_count", "appCat.communication",
+                 "appCat.communication_count", "appCat.entertainment", "appCat.entertainment_count", "appCat.finance",
+                 "appCat.finance_count", "appCat.game", "appCat.game_count", "appCat.office", "appCat.office_count",
+                 "appCat.other", "appCat.other_count", "appCat.social", "appCat.social_count", "appCat.travel",
+                 "appCat.travel_count", "appCat.unknown", "appCat.unknown_count", "appCat.utilities",
+                 "appCat.utilities_count", "appCat.weather", "appCat.weather_count"]
 
-datapoints_df = pd.DataFrame.from_dict(datapoints, orient='index', columns=var_names)
-datapoints_df.info()
-datapoints_df.to_csv("per_day_participant_dataset.csv")
+    # datapoint for each day + individual combination (good?)
+    unique_ids = get_unique_individual_ids(dataset_df)
+    datapoints = {}
+    for participant_id in tqdm(unique_ids, desc="participants"):
+        # dataframe containing only rows of participant with id "participant_id"
+        id_df = dataset_df[dataset_df["id"] == participant_id]
+        unique_dates = get_unique_dates(id_df)
+        for date in unique_dates:
+            # per date
+            time1 = datetime.combine(date, time(0, 0))
+            time2 = datetime.combine(date, time(23, 59))
+            relevant_rows = get_all_rows_between(participant_id, time1, time2, id_df)
+            datapoints.setdefault((participant_id, date), [0] * len(var_names))
+            for index, row in relevant_rows.iterrows():
+                var_index = var_names.index(row["variable"])
+                datapoints[(participant_id, date)][var_index] += row["value"]
+                datapoints[(participant_id, date)][var_index + 1] += 1
+
+    # create dataframe from dict and save it to save_path
+    datapoints_df = pd.DataFrame.from_dict(datapoints, orient='index', columns=var_names)
+    datapoints_df.info()
+    datapoints_df.to_csv(save_path)
+
+
+def pdp_dataset_to_sum_dataset(load_path="per_day_participant_dataset.csv", save_path="sum_dataset.csv"):
+    df = pd.read_csv(load_path)
+    var_names = ['mood', 'circumplex.arousal', 'circumplex.valence', 'activity', 'screen',
+                 'call', 'sms', 'appCat.builtin', 'appCat.communication',
+                 'appCat.entertainment', 'appCat.finance', 'appCat.game', 'appCat.office',
+                 'appCat.other', 'appCat.social', 'appCat.travel', 'appCat.unknown',
+                 'appCat.utilities', 'appCat.weather']
+
+    count_var_names = ["mood_count", "circumplex.arousal_count", "circumplex.valence_count", "activity_count",
+                       "screen_count", "call_count", "sms_count", "appCat.builtin_count", "appCat.communication_count",
+                       "appCat.entertainment_count", "appCat.finance_count", "appCat.game_count", "appCat.office_count",
+                       "appCat.other_count", "appCat.social_count", "appCat.travel_count", "appCat.unknown_count",
+                       "appCat.utilities_count", "appCat.weather_count"]
+
+    df.drop(count_var_names, axis=1)
+    df.to_csv(save_path)
+
+
+def pdp_dataset_to_avg_dataset(load_path="per_day_participant_dataset.csv", save_path="avg_dataset.csv"):
+    df = pd.read_csv(load_path)
+    var_names = ['mood', 'circumplex.arousal', 'circumplex.valence', 'activity', 'screen',
+                 'call', 'sms', 'appCat.builtin', 'appCat.communication',
+                 'appCat.entertainment', 'appCat.finance', 'appCat.game', 'appCat.office',
+                 'appCat.other', 'appCat.social', 'appCat.travel', 'appCat.unknown',
+                 'appCat.utilities', 'appCat.weather']
+
+    count_var_names = ["mood_count", "circumplex.arousal_count", "circumplex.valence_count", "activity_count",
+                       "screen_count", "call_count", "sms_count", "appCat.builtin_count", "appCat.communication_count",
+                       "appCat.entertainment_count", "appCat.finance_count", "appCat.game_count", "appCat.office_count",
+                       "appCat.other_count", "appCat.social_count", "appCat.travel_count", "appCat.unknown_count",
+                       "appCat.utilities_count", "appCat.weather_count"]
+
+    for var_name in var_names:
+        df[var_name] = df[var_name] / df[var_name + "_count"]
+
+    df.to_csv(save_path)
+
+
+#create_per_day_and_participant_dataset()
+pdp_dataset_to_sum_dataset()
+pdp_dataset_to_avg_dataset()
+
