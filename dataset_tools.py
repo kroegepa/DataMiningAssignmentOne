@@ -3,11 +3,15 @@ from matplotlib import pyplot as plt
 import pandas as pds
 import numpy as np
 from datetime import date, datetime, time
+from tqdm import tqdm
 
-dataset_df = pd.read_csv("dataset_mood_smartphone.csv", index_col=0)
+# path = "small_adv_dataset.csv"
+path = "dataset_mood_smartphone.csv"
+
+dataset_df = pd.read_csv(path, index_col=0)
 dataset_df["time"] = pd.to_datetime(dataset_df['time'])
-dataset_df.info()
-print(dataset_df.head())
+# dataset_df.info()
+# print(dataset_df.head())
 
 
 def get_all_rows_between(indiv, date_time1, date_time2, df=dataset_df):
@@ -64,13 +68,41 @@ def get_unique_individual_ids(df):
     return df["id"].unique()
 
 
+def get_unique_variables(df):
+    """
+    returns unique individual_ids in the df
+    :param df: dataframe
+    :return: list containing individual_ids as string
+    """
+    return df["variable"].unique()
+
+
+var_names = ['mood', 'circumplex.arousal', 'circumplex.valence', 'activity', 'screen',
+             'call', 'sms', 'appCat.builtin', 'appCat.communication',
+             'appCat.entertainment', 'appCat.finance', 'appCat.game', 'appCat.office',
+             'appCat.other', 'appCat.social', 'appCat.travel', 'appCat.unknown',
+             'appCat.utilities', 'appCat.weather']
+# var_names = get_unique_variables(dataset_df)
+
+# datapoint for each day + individual combination (good?)
 unique_ids = get_unique_individual_ids(dataset_df)
-for participant_id in unique_ids:
+datapoints = {}
+for participant_id in tqdm(unique_ids, desc="participants"):
     # dataframe containing only rows of participant with id "participant_id"
     id_df = dataset_df[dataset_df["id"] == participant_id]
     unique_dates = get_unique_dates(id_df)
-    for date in unique_dates:
+    for date in tqdm(unique_dates, desc="dates"):
         # per date
         time1 = datetime.combine(date, time(0, 0))
         time2 = datetime.combine(date, time(23, 59))
         relevant_rows = get_all_rows_between(participant_id, time1, time2, id_df)
+        datapoints.setdefault((participant_id, date), [(0, 0)] * len(var_names))
+        for index, row in relevant_rows.iterrows():
+            var_index = var_names.index(row["variable"])
+            # sum everything together
+            previous_count, previous_sum = datapoints[(participant_id, date)][var_index]
+            datapoints[(participant_id, date)][var_index] = (previous_count+1, previous_sum + row["value"])
+
+datapoints_df = pd.DataFrame.from_dict(datapoints, orient='index', columns=var_names)
+datapoints_df.info()
+datapoints_df.to_csv("per_day_participant_dataset.csv")
