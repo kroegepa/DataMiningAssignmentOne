@@ -65,4 +65,3 @@ for var_name in var_names:
 
 print(tabulate(tablulate_list, headers=["Variable"] + list(stats.keys()), tablefmt='outline'))
 
-# TODO: graph showing distribution
