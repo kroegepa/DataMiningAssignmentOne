@@ -136,7 +136,7 @@ def create_per_day_and_participant_dataset(save_path="per_day_participant_datase
 
     datapoints_list = []
     # transform dict to list
-    for key, value in datapoints.iteritems():
+    for key, value in datapoints.items():
         temp = [key[0], key[1]]
         temp += value
         datapoints_list.append(temp)
