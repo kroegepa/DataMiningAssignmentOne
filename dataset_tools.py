@@ -11,7 +11,6 @@ path = "dataset_mood_smartphone.csv"
 dataset_df = pd.read_csv(path, index_col=0)
 dataset_df["time"] = pd.to_datetime(dataset_df['time'])
 
-
 # dataset_df.info()
 # print(dataset_df.head())
 
@@ -21,8 +20,10 @@ var_names = ['mood', 'circumplex.arousal', 'circumplex.valence', 'activity', 'sc
              'appCat.other', 'appCat.social', 'appCat.travel', 'appCat.unknown',
              'appCat.utilities', 'appCat.weather']
 
-cutoff_list = [None,None,None,None,2000,None,None,1000,2000,5000,None,None,5000,None,5000,2000,None,None,None]
-cutoff_list_test = [None,None,None,None,2000,None,None,1000,2000,5000,None,2000,5000,1000,5000,2000,1500,500,None]
+cutoff_list = [None, None, None, None, 2000, None, None, 1000, 2000, 5000, None, None, 5000, None, 5000, 2000, None,
+               None, None]
+cutoff_list_test = [None, None, None, None, 2000, None, None, 1000, 2000, 5000, None, 2000, 5000, 1000, 5000, 2000,
+                    1500, 500, None]
 count_var_names = ["mood_count", "circumplex.arousal_count", "circumplex.valence_count", "activity_count",
                    "screen_count", "call_count", "sms_count", "appCat.builtin_count", "appCat.communication_count",
                    "appCat.entertainment_count", "appCat.finance_count", "appCat.game_count", "appCat.office_count",
@@ -30,24 +31,27 @@ count_var_names = ["mood_count", "circumplex.arousal_count", "circumplex.valence
                    "appCat.utilities_count", "appCat.weather_count"]
 
 var_and_count_names = ["mood", "mood_count", "circumplex.arousal", "circumplex.arousal_count", "circumplex.valence",
-             "circumplex.valence_count", "activity", "activity_count", "screen", "screen_count", "call",
-             "call_count",
-             "sms", "sms_count", "appCat.builtin", "appCat.builtin_count", "appCat.communication",
-             "appCat.communication_count", "appCat.entertainment", "appCat.entertainment_count", "appCat.finance",
-             "appCat.finance_count", "appCat.game", "appCat.game_count", "appCat.office", "appCat.office_count",
-             "appCat.other", "appCat.other_count", "appCat.social", "appCat.social_count", "appCat.travel",
-             "appCat.travel_count", "appCat.unknown", "appCat.unknown_count", "appCat.utilities",
-             "appCat.utilities_count", "appCat.weather", "appCat.weather_count"]
+                       "circumplex.valence_count", "activity", "activity_count", "screen", "screen_count", "call",
+                       "call_count",
+                       "sms", "sms_count", "appCat.builtin", "appCat.builtin_count", "appCat.communication",
+                       "appCat.communication_count", "appCat.entertainment", "appCat.entertainment_count",
+                       "appCat.finance",
+                       "appCat.finance_count", "appCat.game", "appCat.game_count", "appCat.office",
+                       "appCat.office_count",
+                       "appCat.other", "appCat.other_count", "appCat.social", "appCat.social_count", "appCat.travel",
+                       "appCat.travel_count", "appCat.unknown", "appCat.unknown_count", "appCat.utilities",
+                       "appCat.utilities_count", "appCat.weather", "appCat.weather_count"]
+
 
 def get_all_rows_between(indiv, date_time1, date_time2, df=dataset_df):
-    '''
+    """
     Gives all the rows that fit the params. (for indiv between time1 and time2)
     :param indiv: individual id
     :param date_time1: first date time
     :param date_time2: second date time
     :param df: dataframe of the dataset
     :return: DataFrame object
-    '''
+    """
     if date_time1 < date_time2:
         date_time1, date_time2 = date_time2, date_time1
 
@@ -130,8 +134,15 @@ def create_per_day_and_participant_dataset(save_path="per_day_participant_datase
                 datapoints[(participant_id, date)][var_index] += row["value"]
                 datapoints[(participant_id, date)][var_index + 1] += 1
 
+    datapoints_list = []
+    # transform dict to list
+    for key, value in datapoints.iteritems():
+        temp = [key[0], key[1]]
+        temp += value
+        datapoints_list.append(temp)
+
     # create dataframe from dict and save it to save_path
-    datapoints_df = pd.DataFrame.from_dict(datapoints, orient='index', columns=var_and_count_names)
+    datapoints_df = pd.DataFrame.from_dict(datapoints, orient='index', columns=["id", "date"] + var_and_count_names)
     datapoints_df.info()
     datapoints_df.to_csv(save_path)
 
@@ -145,24 +156,26 @@ def pdp_dataset_to_sum_dataset(load_path="per_day_participant_dataset.csv", save
 def pdp_dataset_to_avg_dataset(load_path="per_day_participant_dataset.csv", save_path="avg_dataset.csv"):
     df = pd.read_csv(load_path)
 
-
     for var_name in var_names:
         df[var_name] = df[var_name] / df[var_name + "_count"]
 
     df = df.drop(count_var_names, axis=1)
     df.to_csv(save_path)
 
-def transform_data(load_path="per_day_participant_dataset.csv",save_path = "per_day_participant_dataset_with_co.csv",cutoff = cutoff_list):
-    df = pd.read_csv(load_path,index_col=0)
+
+def transform_data(load_path="per_day_participant_dataset.csv", save_path="per_day_participant_dataset_with_co.csv",
+                   cutoff=cutoff_list):
+    df = pd.read_csv(load_path, index_col=0)
     df["time"] = pd.to_datetime(dataset_df['time'])
-    for index,name in enumerate(var_names):
-        if index>2:
-            df.loc[df[name] < 0,name] = 0 
-            mean = df.loc[df[name] < cutoff[index],name].mean()
-            df.loc[df[name] > cutoff[index],name] = mean 
+    for index, name in enumerate(var_names):
+        if index > 2:
+            df.loc[df[name] < 0, name] = 0
+            mean = df.loc[df[name] < cutoff[index], name].mean()
+            df.loc[df[name] > cutoff[index], name] = mean
     df.to_csv(save_path)
+
 
 transform_data()
 # create_per_day_and_participant_dataset()
-#pdp_dataset_to_sum_dataset()
-#pdp_dataset_to_avg_dataset()
+# pdp_dataset_to_sum_dataset()
+# pdp_dataset_to_avg_dataset()
