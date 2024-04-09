@@ -20,8 +20,10 @@ var_names = ['mood', 'circumplex.arousal', 'circumplex.valence', 'activity', 'sc
              'appCat.other', 'appCat.social', 'appCat.travel', 'appCat.unknown',
              'appCat.utilities', 'appCat.weather']
 
-cutoff_list = [None,None,None,None,2000,None,None,1000,2000,5000,None,None,5000,None,5000,2000,None,None,None]
-cutoff_list_test = [None,None,None,None,2000,None,None,1000,2000,5000,None,2000,5000,1000,5000,2000,1500,500,None]
+cutoff_list = [None, None, None, None, 2000, None, None, 1000, 2000, 5000, None, None, 5000, None, 5000, 2000, None,
+               None, None]
+cutoff_list_test = [None, None, None, None, 2000, None, None, 1000, 2000, 5000, None, 2000, 5000, 1000, 5000, 2000,
+                    1500, 500, None]
 count_var_names = ["mood_count", "circumplex.arousal_count", "circumplex.valence_count", "activity_count",
                    "screen_count", "call_count", "sms_count", "appCat.builtin_count", "appCat.communication_count",
                    "appCat.entertainment_count", "appCat.finance_count", "appCat.game_count", "appCat.office_count",
@@ -140,7 +142,7 @@ def create_per_day_and_participant_dataset(save_path="per_day_participant_datase
         datapoints_list.append(temp)
 
     # create dataframe from dict and save it to save_path
-    datapoints_df = pd.DataFrame.from_dict(datapoints, orient='index', columns=["id", "date"] + var_and_count_names)
+    datapoints_df = pd.DataFrame(datapoints_list, columns=["id", "date"] + var_and_count_names)
     datapoints_df.info()
     datapoints_df.to_csv(save_path)
 
@@ -160,10 +162,12 @@ def pdp_dataset_to_avg_dataset(load_path="per_day_participant_dataset.csv", save
     df = df.drop(count_var_names, axis=1)
     df.to_csv(save_path)
 
-def transform_data(load_path="dataset_mood_smartphone.csv",save_path = "dataset_mood_smartphone_with_co.csv",cutoff = cutoff_list):
-    df = pd.read_csv(load_path,index_col=0)
+
+def transform_data(load_path="dataset_mood_smartphone.csv", save_path="dataset_mood_smartphone_with_co.csv",
+                   cutoff=cutoff_list):
+    df = pd.read_csv(load_path, index_col=0)
     df["time"] = pd.to_datetime(dataset_df['time'])
-    for index,name in enumerate(var_names):
+    for index, name in enumerate(var_names):
         if index > 2:
             mean_count = 0
             mean = 0
@@ -178,17 +182,15 @@ def transform_data(load_path="dataset_mood_smartphone.csv",save_path = "dataset_
                         mean_count += 1
                         mean += row["value"]
 
-                df.loc[(df['value'] < 0) & (df['variable'] == name),"value"] = 0
+                df.loc[(df['value'] < 0) & (df['variable'] == name), "value"] = 0
 
-
-                mean = mean/mean_count
-                df.loc[(df['value'] > cutoff[index]) & (df['variable'] == name),"value"] = mean
-
+                mean = mean / mean_count
+                df.loc[(df['value'] > cutoff[index]) & (df['variable'] == name), "value"] = mean
 
     df.to_csv(save_path)
 
 
-transform_data()
-# create_per_day_and_participant_dataset()
+# transform_data()
+create_per_day_and_participant_dataset()
 # pdp_dataset_to_sum_dataset()
 # pdp_dataset_to_avg_dataset()
