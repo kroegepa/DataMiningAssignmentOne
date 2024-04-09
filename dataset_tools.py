@@ -15,7 +15,7 @@ dataset_df["time"] = pd.to_datetime(dataset_df['time'])
 # dataset_df.info()
 # print(dataset_df.head())
 
-var_names = ['mood', 'circumplex.arousal', 'circumplex.valence', 'activity', 'screen',
+var_names = ['mood', 'circumplex.arousal', 'circumplex.valence', 'activity', "screen",
              'call', 'sms', 'appCat.builtin', 'appCat.communication',
              'appCat.entertainment', 'appCat.finance', 'appCat.game', 'appCat.office',
              'appCat.other', 'appCat.social', 'appCat.travel', 'appCat.unknown',
@@ -152,14 +152,39 @@ def pdp_dataset_to_avg_dataset(load_path="per_day_participant_dataset.csv", save
     df = df.drop(count_var_names, axis=1)
     df.to_csv(save_path)
 
-def transform_data(load_path="dataset_mood_smarthphone.csv",save_path = "dataset_mood_smartphone_with_co.csv",cutoff = cutoff_list):
+def transform_data(load_path="dataset_mood_smartphone.csv",save_path = "dataset_mood_smartphone_with_co.csv",cutoff = cutoff_list):
     df = pd.read_csv(load_path,index_col=0)
     df["time"] = pd.to_datetime(dataset_df['time'])
     for index,name in enumerate(var_names):
-        if index>2:
-            df.loc[df[name] < 0,name] = 0 
-            mean = df.loc[df[name] < cutoff[index],name].mean()
-            df.loc[df[name] > cutoff[index],name] = mean 
+        if index > 2:
+            mean_count = 0
+            mean = 0
+            if cutoff[index] != None:
+
+                for row_index, row in df[df['variable'] == name].iterrows():
+                    if row["value"] < 0:
+                        print('low')
+                        pass
+                    elif row["value"] > cutoff[index]:
+                        pass
+                    else:
+                        mean_count += 1
+                        mean += row["value"]
+                print('before')
+                print(name)
+                print(df.loc[(df['value'] < 0) & (df['variable'] == name),"value"])
+                df.loc[(df['value'] < 0) & (df['variable'] == name),"value"] = 0
+                print(df.loc[(df['value'] < 0) & (df['variable'] == name),"value"])
+                print('after')
+
+                print(df.loc[df["variable"] == "screen","value"])
+                mean = mean/mean_count
+                print('before')
+                print(df.loc[(df['value'] > cutoff[index]) & (df['variable'] == name),"value"])
+                df.loc[(df['value'] > cutoff[index]) & (df['variable'] == name),"value"] = mean
+                print(df.loc[(df['value'] > cutoff[index]) & (df['variable'] == name),"value"])
+                print('after')                
+                
     df.to_csv(save_path)
 
 transform_data()
