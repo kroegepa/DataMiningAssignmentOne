@@ -163,27 +163,19 @@ def transform_data(load_path="dataset_mood_smartphone.csv",save_path = "dataset_
 
                 for row_index, row in df[df['variable'] == name].iterrows():
                     if row["value"] < 0:
-                        print('low')
                         pass
                     elif row["value"] > cutoff[index]:
                         pass
                     else:
                         mean_count += 1
                         mean += row["value"]
-                print('before')
-                print(name)
-                print(df.loc[(df['value'] < 0) & (df['variable'] == name),"value"])
-                df.loc[(df['value'] < 0) & (df['variable'] == name),"value"] = 0
-                print(df.loc[(df['value'] < 0) & (df['variable'] == name),"value"])
-                print('after')
 
-                print(df.loc[df["variable"] == "screen","value"])
+                df.loc[(df['value'] < 0) & (df['variable'] == name),"value"] = 0
+  
+
                 mean = mean/mean_count
-                print('before')
-                print(df.loc[(df['value'] > cutoff[index]) & (df['variable'] == name),"value"])
                 df.loc[(df['value'] > cutoff[index]) & (df['variable'] == name),"value"] = mean
-                print(df.loc[(df['value'] > cutoff[index]) & (df['variable'] == name),"value"])
-                print('after')                
+               
                 
     df.to_csv(save_path)
 
