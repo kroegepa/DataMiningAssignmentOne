@@ -135,6 +135,52 @@ def create_per_day_and_participant_dataset(save_path="per_day_participant_datase
     datapoints_df.info()
     datapoints_df.to_csv(save_path)
 
+def create_per_interval_and_participant_dataset(df, save_path="per_day_participant_dataset.csv", interval=24):
+    # var_names = get_unique_variables(dataset_df) # don't use this, it's a numpy array
+    """
+    Aggregates data given the number of hours as interval
+
+    var_names = ['mood', 'circumplex.arousal', 'circumplex.valence', 'activity', 'screen',
+                 'call', 'sms', 'appCat.builtin', 'appCat.communication',
+                 'appCat.entertainment', 'appCat.finance', 'appCat.game', 'appCat.office',
+                 'appCat.other', 'appCat.social', 'appCat.travel', 'appCat.unknown',
+                 'appCat.utilities', 'appCat.weather']
+    """
+    df["time"] = pd.to_datetime(df['time'])
+    min_time = df['time'].min()
+    max_time = df['time'].max() #TODO
+    # datapoint for each day + individual combination (good?)
+    unique_ids = get_unique_individual_ids(dataset_df)
+    datapoints = {}
+    for participant_id in tqdm(unique_ids, desc="participants"):
+        # dataframe containing only rows of participant with id "participant_id"
+        id_df = dataset_df[dataset_df["id"] == participant_id]
+        unique_dates = get_unique_dates(id_df)
+        # get the first date
+
+        
+
+
+        for date in unique_dates:
+
+            
+
+            
+            # per date
+            time1 = datetime.combine(date, time(0, 0))
+            time2 = datetime.combine(date, time(23, 59))
+            relevant_rows = get_all_rows_between(participant_id, time1, time2, id_df)
+            datapoints.setdefault((participant_id, date), [0] * len(var_and_count_names))
+            for index, row in relevant_rows.iterrows():
+                var_index = var_and_count_names.index(row["variable"])
+                datapoints[(participant_id, date)][var_index] += row["value"]
+                datapoints[(participant_id, date)][var_index + 1] += 1
+
+    # create dataframe from dict and save it to save_path
+    datapoints_df = pd.DataFrame.from_dict(datapoints, orient='index', columns=var_and_count_names)
+    datapoints_df.info()
+    datapoints_df.to_csv(save_path)
+
 
 def pdp_dataset_to_sum_dataset(load_path="per_day_participant_dataset.csv", save_path="sum_dataset.csv"):
     df = pd.read_csv(load_path)
@@ -153,6 +199,8 @@ def pdp_dataset_to_avg_dataset(load_path="per_day_participant_dataset.csv", save
     df.to_csv(save_path)
 
 def transform_data(load_path="dataset_mood_smartphone.csv",save_path = "dataset_mood_smartphone_with_co.csv",cutoff = cutoff_list):
+    
+
     df = pd.read_csv(load_path,index_col=0)
     df["time"] = pd.to_datetime(dataset_df['time'])
     for index,name in enumerate(var_names):
@@ -160,7 +208,8 @@ def transform_data(load_path="dataset_mood_smartphone.csv",save_path = "dataset_
             mean_count = 0
             mean = 0
             if cutoff[index] != None:
-
+                
+                # Compute mean for values within the cutoff range
                 for row_index, row in df[df['variable'] == name].iterrows():
                     if row["value"] < 0:
                         pass
@@ -170,16 +219,22 @@ def transform_data(load_path="dataset_mood_smartphone.csv",save_path = "dataset_
                         mean_count += 1
                         mean += row["value"]
 
+                # Set negative values to 0
                 df.loc[(df['value'] < 0) & (df['variable'] == name),"value"] = 0
-  
 
                 mean = mean/mean_count
-                df.loc[(df['value'] > cutoff[index]) & (df['variable'] == name),"value"] = mean
+
+                # Set values above cutoff to computed mean 
+                df.loc[(df['value'] > cutoff[index]) & (df['variable'] == name),"value"] = mean # should't we replace it with cutoff[index]?
                
                 
     df.to_csv(save_path)
 
-transform_data()
-# create_per_day_and_participant_dataset()
+#transform_data()
+if __name__ == "__main__":
+    transform_data()
+    create_per_day_and_participant_dataset()
+    pdp_dataset_to_sum_dataset()
+    pdp_dataset_to_avg_dataset()
 #pdp_dataset_to_sum_dataset()
 #pdp_dataset_to_avg_dataset()
