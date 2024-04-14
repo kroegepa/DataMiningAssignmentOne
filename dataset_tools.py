@@ -146,35 +146,43 @@ def create_per_interval_and_participant_dataset(df, save_path="per_day_participa
                  'appCat.other', 'appCat.social', 'appCat.travel', 'appCat.unknown',
                  'appCat.utilities', 'appCat.weather']
     """
-    df["time"] = pd.to_datetime(df['time'])
-    min_time = df['time'].min()
-    max_time = df['time'].max() #TODO
+    if df["time"].dtype != 'datetime64[ns]':
+        df["time"] = pd.to_datetime(df['time'], format='mixed')
+    
     # datapoint for each day + individual combination (good?)
-    unique_ids = get_unique_individual_ids(dataset_df)
+    unique_ids = get_unique_individual_ids(df)
     datapoints = {}
     for participant_id in tqdm(unique_ids, desc="participants"):
         # dataframe containing only rows of participant with id "participant_id"
-        id_df = dataset_df[dataset_df["id"] == participant_id]
-        unique_dates = get_unique_dates(id_df)
-        # get the first date
+        id_df = df[df["id"] == participant_id]
+
+        min_time = id_df['time'].min()
+        max_time = id_df['time'].max()
+
+
+        # convert min and max time to date nearest date
+        min_time = datetime.combine(min_time.date(), time(0, 0)) #floor to nearest date
+        max_time = max_time.date() + pd.Timedelta(days=1) #ceil to nearest date
+
+        time_range = pd.to_datetime(pd.date_range(min_time, max_time, freq=f"{interval}h"))
+        
 
         
 
+        for time_i, start_time in enumerate(time_range):
+            if time_i == len(time_range) - 1:
+                break
+            if time_range[time_i + 1] - time_range[time_i] != pd.Timedelta(f"{interval}h"):
+                break
 
-        for date in unique_dates:
-
-            
-
-            
-            # per date
-            time1 = datetime.combine(date, time(0, 0))
-            time2 = datetime.combine(date, time(23, 59))
-            relevant_rows = get_all_rows_between(participant_id, time1, time2, id_df)
-            datapoints.setdefault((participant_id, date), [0] * len(var_and_count_names))
+            end_date = time_range[time_i + 1]
+ 
+            relevant_rows = get_all_rows_between(participant_id, start_time, end_date, id_df)
+            datapoints.setdefault((participant_id, start_time), [0] * len(var_and_count_names))
             for index, row in relevant_rows.iterrows():
                 var_index = var_and_count_names.index(row["variable"])
-                datapoints[(participant_id, date)][var_index] += row["value"]
-                datapoints[(participant_id, date)][var_index + 1] += 1
+                datapoints[(participant_id, start_time)][var_index] += row["value"]
+                datapoints[(participant_id, start_time)][var_index + 1] += 1
 
     # create dataframe from dict and save it to save_path
     datapoints_df = pd.DataFrame.from_dict(datapoints, orient='index', columns=var_and_count_names)
@@ -201,8 +209,9 @@ def pdp_dataset_to_avg_dataset(load_path="per_day_participant_dataset.csv", save
 def transform_data(load_path="dataset_mood_smartphone.csv",save_path = "dataset_mood_smartphone_with_co.csv",cutoff = cutoff_list):
     
 
-    df = pd.read_csv(load_path,index_col=0)
-    df["time"] = pd.to_datetime(dataset_df['time'])
+    df = pd.read_csv(load_path)
+    if df["time"].dtype != 'datetime64[ns]':
+        df["time"] = pd.to_datetime(df['time'], format='%Y-%m-%d %H:%M:%S.%f')
     for index,name in enumerate(var_names):
         if index > 2:
             mean_count = 0
@@ -232,9 +241,14 @@ def transform_data(load_path="dataset_mood_smartphone.csv",save_path = "dataset_
 
 #transform_data()
 if __name__ == "__main__":
-    transform_data()
-    create_per_day_and_participant_dataset()
-    pdp_dataset_to_sum_dataset()
-    pdp_dataset_to_avg_dataset()
+    transform_data("dataset_mood_smartphone_no_nan.csv","dataset_mood_smartphone_co.csv")
+    # load transformed dataset
+    transform_df = pd.read_csv("dataset_mood_smartphone_co.csv")
+    # create per day and participant dataset
+    create_per_interval_and_participant_dataset(transform_df, "per_day_participant_dataset_co.csv", interval=24)
+    #pdp_dataset_to_sum_dataset()
+    #pdp_dataset_to_avg_dataset()
+    #transform_data()
+    
 #pdp_dataset_to_sum_dataset()
 #pdp_dataset_to_avg_dataset()
