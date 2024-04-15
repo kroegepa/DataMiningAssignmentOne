@@ -249,6 +249,19 @@ def reformat_aggregated_data(df):
     
     return df
 
+# def avarage_data(df, avarage_vars = var_names[0:4]):
+#     for var in avarage_vars:
+#         df[var] = df[var]/df[var + "_count"]
+#     return df
+
+#set to zero if division by zero
+def avarage_data(df, avarage_vars = var_names[0:4]):
+    for var in avarage_vars:
+        df[var] = np.where(df[var + "_count"] == 0, 0, df[var]/df[var + "_count"])
+    return df
+
+
+
 def plot_counts_per_participant(df):
     partecipants = df['participant_id'].unique()
     for participant in partecipants:
