@@ -141,7 +141,8 @@ def create_per_interval_and_participant_dataset(df, save_path="per_day_participa
                  'appCat.utilities', 'appCat.weather']
     """
     if df["time"].dtype != 'datetime64[ns]':
-        df["time"] = pd.to_datetime(df['time'], format='mixed')
+        # df["time"] = pd.to_datetime(df['time'], format='mixed')
+        df["time"] = pd.to_datetime(df['time'])
 
     # datapoint for each day + individual combination (good?)
     unique_ids = get_unique_individual_ids(df)
@@ -274,7 +275,7 @@ def plot_counts_per_participant(df):
 
 # transform_data()
 if __name__ == "__main__":
-    transform_data("dataset_mood_smartphone_no_nan.csv", "dataset_mood_smartphone_co.csv")
+    # transform_data("dataset_mood_smartphone_no_nan.csv", "dataset_mood_smartphone_co.csv")
     # load transformed dataset
     transform_df = pd.read_csv("dataset_mood_smartphone_co.csv")
     # create per day and participant dataset
