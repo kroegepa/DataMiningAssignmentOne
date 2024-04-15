@@ -1,9 +1,10 @@
 import pandas as pd
 from matplotlib import pyplot as plt
-import pandas as pds
 import numpy as np
 from datetime import date, datetime, time
 from tqdm import tqdm
+from pandas import Timestamp
+
 
 # path = "small_adv_dataset.csv"
 path = "dataset_mood_smartphone.csv"
@@ -48,13 +49,13 @@ def get_all_rows_between(indiv, date_time1, date_time2, df=dataset_df):
     :param df: dataframe of the dataset
     :return: DataFrame object
     '''
-    if date_time1 < date_time2:
+    if date_time1 > date_time2:
         date_time1, date_time2 = date_time2, date_time1
 
     result = []
 
     for index, row in df[df['id'] == indiv].iterrows():
-        if date_time1 >= row["time"] >= row["time"]:
+        if date_time1 <= row["time"] < date_time2:
             result.append(row)
 
     return pd.DataFrame(result, columns=list(df.columns))
@@ -175,9 +176,9 @@ def create_per_interval_and_participant_dataset(df, save_path="per_day_participa
             if time_range[time_i + 1] - time_range[time_i] != pd.Timedelta(f"{interval}h"):
                 break
 
-            end_date = time_range[time_i + 1]
+            end_time = time_range[time_i + 1]
  
-            relevant_rows = get_all_rows_between(participant_id, start_time, end_date, id_df)
+            relevant_rows = get_all_rows_between(participant_id, start_time, end_time, id_df)
             datapoints.setdefault((participant_id, start_time), [0] * len(var_and_count_names))
             for index, row in relevant_rows.iterrows():
                 var_index = var_and_count_names.index(row["variable"])
@@ -238,6 +239,25 @@ def transform_data(load_path="dataset_mood_smartphone.csv",save_path = "dataset_
                
                 
     df.to_csv(save_path)
+
+def reformat_aggregated_data(df):
+    df["date_time"]= pd.to_datetime([eval(string)[1] for string in df['Unnamed: 0']])
+    df["participant_id"]= [eval(string)[0] for string in df['Unnamed: 0']]
+
+    df.drop(columns=['Unnamed: 0'], inplace=True)
+    df = df[df.columns.to_list()[-2:] + df.columns.to_list()[:-2]]
+    
+    return df
+
+def plot_counts_per_participant(df):
+    partecipants = df['participant_id'].unique()
+    for participant in partecipants:
+        plt.plot(df[df['participant_id'] == participant]['date_time'], df[df['participant_id'] == participant]['mood_count'])
+        plt.title('Participant ' + participant + ' mood count')
+        plt.show()
+        plt.plot(df[df['participant_id'] == participant]['date_time'], df[df['participant_id'] == participant].iloc[:, 3::2].sum(axis=1))
+        plt.title('Participant ' + participant + ' sum of the _count variables')
+        plt.show()
 
 #transform_data()
 if __name__ == "__main__":
