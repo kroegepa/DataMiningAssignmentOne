@@ -1,12 +1,13 @@
 import pandas as pd
 from tabulate import tabulate
 from matplotlib import pyplot as plt
+
 path = "sum_dataset.csv"
-#path = "dataset_mood_smartphone.csv"
+# path = "dataset_mood_smartphone.csv"
 
 df = pd.read_csv(path, index_col=0)
 df.info()
-#print(df.head())
+# print(df.head())
 
 # for sum dataset
 var_names = ['mood', 'circumplex.arousal', 'circumplex.valence', 'activity', 'screen',
@@ -14,7 +15,7 @@ var_names = ['mood', 'circumplex.arousal', 'circumplex.valence', 'activity', 'sc
              'appCat.entertainment', 'appCat.finance', 'appCat.game', 'appCat.office',
              'appCat.other', 'appCat.social', 'appCat.travel', 'appCat.unknown',
              'appCat.utilities', 'appCat.weather']
-df.drop('Unnamed: 0',axis=1,inplace=True)
+df.drop('Unnamed: 0', axis=1, inplace=True)
 df.info()
 f = plt.figure(figsize=(19, 15))
 plt.matshow(df.corr(), fignum=f.number)
