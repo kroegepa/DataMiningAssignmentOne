@@ -5,13 +5,14 @@ from torch.utils.data import TensorDataset, DataLoader, random_split
 from sklearn.preprocessing import LabelEncoder
 import torch.nn.functional as F
 
-# TODO: disregard count=0 labels
+# TODO: disregard mood_count=0 labels
+# TODO: michele graph
 
 # print parameters
-show_output = True
+show_output = False
 
 # load numpy data
-data = np.load('dataset_not_normalized.npz', allow_pickle=True)
+data = np.load('dataset_normalized.npz', allow_pickle=True)
 features = data['array1']
 labels = data['array2']
 
@@ -28,12 +29,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 input_size = features.shape[2]
 hidden_size = 50
 num_layers = 2
-num_classes = 3
-num_epochs = 10
+num_classes = max(labels)+1
+num_epochs = 100
 learning_rate = 0.01
-batch_size = 1
+batch_size = 8
 num_samples = features.shape[0]
-split_size = 0.9  # 0.8 = 80% train & 20% test
+split_size = 0.8  # 0.8 = 80% train & 20% test
 
 # create TensorDataset
 dataset = TensorDataset(features, labels)
