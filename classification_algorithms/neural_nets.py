@@ -28,6 +28,7 @@ class GRUClassifier(nn.Module):
         criterion = nn.CrossEntropyLoss()  # good for multi-class-classification
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
 
+        best_valid_acc = 0
         for epoch in range(num_epochs):
             self.train()  # set model to train mode
             total_loss = 0
@@ -65,7 +66,7 @@ class GRUClassifier(nn.Module):
                         test_acc += correct / labels.size(0)
 
                 avg_valid_loss = total_valid_loss / len(test_loader)
-                avg_test_acc = test_acc / len(test_loader)
+                avg_valid_acc = test_acc / len(test_loader)
 
                 # TODO: save best model
                 ''' 
@@ -76,10 +77,14 @@ class GRUClassifier(nn.Module):
                     torch.save(self.state_dict(), 'best_model.pth')
                 '''
 
-                print(
+                """print(
                     f"Epoch {epoch + 1}/{num_epochs}:\n" +
                     f"Train Loss: {avg_train_loss:.4f}, Validation Loss: {avg_valid_loss:.4f}\n" +
-                    f"Train Acc: {avg_train_acc * 100:.2f}%, Validation Acc: {avg_test_acc * 100:.2f}%")
+                    f"Train Acc: {avg_train_acc * 100:.2f}%, Validation Acc: {avg_valid_acc * 100:.2f}%")"""
+                if avg_valid_acc > best_valid_acc:
+                    best_valid_acc = avg_valid_acc
             else:
                 print(f"Epoch {epoch + 1}/{num_epochs}: Train Loss: {avg_train_loss:.4f}" +
                       f"Train Acc: {avg_train_acc * 100:.2f}%")
+
+        return best_valid_acc
