@@ -5,9 +5,9 @@ from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
 
 # parameters
-show_histo = False
-show_output = False
-show_extended_output = False
+show_histo = True
+show_output = True
+show_extended_output = True
 normalize = True
 output_name = "dataset_xgboost.npz"
 
